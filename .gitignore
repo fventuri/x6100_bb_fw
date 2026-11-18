@@ -2,3 +2,11 @@ build/*
 datasheets/*
 .kilo/*
 **/__pycache__
+claude/
+
+# Firmware build artifacts (produced by bringup/*/build.sh)
+*.elf
+*.bin
+*.map
+*.xgf
+*.pad.bin
