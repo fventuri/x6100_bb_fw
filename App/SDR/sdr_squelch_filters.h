@@ -9,53 +9,53 @@
  */
 
 /*
- * SSB low band  : 300 .. 700 Hz at 12000 Hz
- * SSB high band : 1300 .. 1700 Hz at 12000 Hz
+ * SSB low band  : 300 .. 700 Hz at 12500 Hz
+ * SSB high band : 1300 .. 1700 Hz at 12500 Hz
  * Both band-pass, 4th order (2 biquads).
  */
 #define SDR_SQUELCH_SSB_LOW_STAGES 2u
 #define SDR_SQUELCH_SSB_HIGH_STAGES 2u
 
 static const float sdr_squelch_ssb_low_coeffs[SDR_SQUELCH_SSB_LOW_STAGES * 5] = {
-    0.00952576238f,
-    0.0190515248f,
-    0.00952576238f,
-    1.72605987f,
-    -0.82454209f,
+    0.00882608667f,
+    0.0176521733f,
+    0.00882608667f,
+    1.73976468f,
+    -0.830886812f,
     1.0f,
     -2.0f,
     1.0f,
-    1.87294437f,
-    -0.90190083f,
+    1.87893486f,
+    -0.905678332f,
 };
 
 static const float sdr_squelch_ssb_high_coeffs[SDR_SQUELCH_SSB_HIGH_STAGES * 5] = {
-    0.00952576238f,
-    0.0190515248f,
-    0.00952576238f,
-    1.21263941f,
-    -0.852777248f,
+    0.00882608667f,
+    0.0176521733f,
+    0.00882608667f,
+    1.26362617f,
+    -0.858028008f,
     1.0f,
     -2.0f,
     1.0f,
-    1.42201455f,
-    -0.872039207f,
+    1.45985545f,
+    -0.877029858f,
 };
 
 /*
- * NBFM HPF : 3500 Hz at 48000 Hz, 4th order (2 biquads).
+ * NBFM HPF : 3500 Hz at 50000 Hz, 4th order (2 biquads).
  */
 #define SDR_SQUELCH_FM_HPF_STAGES 2u
 
 static const float sdr_squelch_fm_hpf_coeffs[SDR_SQUELCH_FM_HPF_STAGES * 5] = {
-    0.546150435f,
-    -1.09230087f,
-    0.546150435f,
-    1.2734049f,
-    -0.419827856f,
+    0.559793975f,
+    -1.11958795f,
+    0.559793975f,
+    1.29876178f,
+    -0.43537019f,
     1.0f,
     -2.0f,
     1.0f,
-    1.5340906f,
-    -0.710488595f,
+    1.55610449f,
+    -0.719781131f,
 };

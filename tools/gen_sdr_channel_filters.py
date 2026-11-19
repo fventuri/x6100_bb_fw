@@ -52,10 +52,11 @@ REMEZ_MAXITER = 100
 
 FILTERS = [
     {
-        # 200 Hz left transition, fixed fs/4 shift, 12 kHz rate
+        # 200 Hz left transition, fixed fs/4 shift, 12.5 kHz rate (50k re-base;
+        # left edges stay in Hz, upper edge follows shift = fs/4 = 3125 Hz)
         "name": "sdr_ssb",
         "kind": "complex_bandpass",
-        "fs_hz": 12000,
+        "fs_hz": 12500,
         "shift_div": 4,
         "f_pass_left_hz": 150,
         "f_stop_left_hz": -50,

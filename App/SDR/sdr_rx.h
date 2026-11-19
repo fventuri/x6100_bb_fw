@@ -16,10 +16,12 @@
  * generation to change, and it emits the block in step with the demodulator.
  */
 
-#define SDR_RX_RATE_12K  (12000u)
-#define SDR_RX_RATE_24K  (24000u)
-#define SDR_RX_RATE_48K  (48000u)
-#define SDR_RX_RATE_192K (192000u)
+/* Legacy rate labels, kept on the 50 kHz re-base ladder for documentation.
+ * These are not referenced anywhere in App/ (cosmetic only). */
+#define SDR_RX_RATE_12K  (12500u)
+#define SDR_RX_RATE_24K  (25000u)
+#define SDR_RX_RATE_48K  (50000u)
+#define SDR_RX_RATE_192K (200000u)
 
 /* Initialise the module and apply the default resample configuration for the
  * requested FPGA fftdec.  Call after Sdr_Resample_Init() and the demodulator

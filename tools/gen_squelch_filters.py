@@ -6,9 +6,9 @@ The squelch module measures a per-mode "signal vs noise" metric and needs two
 kinds of fixed filters:
 
   * SSB: two equal-width band-pass filters, 300..700 Hz and 1300..1700 Hz at the
-    12 kHz demod rate. Their peaks give the low/high band levels used for the
+    12.5 kHz demod rate. Their peaks give the low/high band levels used for the
     spectral-slope term and the in-band SNR term.
-  * NBFM: a 3.5 kHz high-pass at the 48 kHz discriminator rate, measuring the
+  * NBFM: a 3.5 kHz high-pass at the 50 kHz discriminator rate, measuring the
     out-of-band (above voice) noise.
 
 All filters are 4th order (two CMSIS DF1 biquads). The script writes a C header
@@ -31,12 +31,12 @@ from scipy import signal
 
 DEFAULT_OUTPUT = Path(__file__).resolve().parent.parent / "App/SDR/sdr_squelch_filters.h"
 
-SSB_FS_HZ = 12000.0
+SSB_FS_HZ = 12500.0  # 50k re-base: SSB demod rate 12 -> 12.5 kHz (edges stay Hz)
 SSB_LOW_HZ = (300.0, 700.0)
 SSB_HIGH_HZ = (1300.0, 1700.0)
 SSB_ORDER = 2  # band-pass order 2 -> 2 biquads, overall 4th order
 
-FM_FS_HZ = 48000.0
+FM_FS_HZ = 50000.0  # 50k re-base: NBFM discriminator rate 48 -> 50 kHz
 FM_HPF_HZ = 3500.0
 FM_ORDER = 4  # high-pass order 4 -> 2 biquads
 

@@ -103,7 +103,9 @@ PROFILES = {
         "symbol": "SDR_NBFM",
         "base": "sdr_nbfm",
         "lpf_filters": NBFM_LPF_FILTERS,
-        "defaults": _defaults(),
+        # 50k re-base: NBFM discriminator/audio rate 48 -> 50 kHz. All corner
+        # and band-edge frequencies stay in Hz; only the sample rate changes.
+        "defaults": _defaults(fs=50000.0),
         "output": ROOT_DIR / "App/SDR/sdr_nbfm_filters.h",
         "plot": TOOLS_DIR / "nbfm_filters_response.png",
         "plot_title_fir": "NBFM FIR differentiator",

@@ -7,8 +7,9 @@
  * test for the whole "reuse the portable App layer" bet.
  *
  * Signal: complex baseband carrier at +500 Hz, amplitude-modulated by a 1 kHz
- * tone at depth m = 0.5, at the AM RX rate (48000/2 = 24000 Hz). The envelope
- * detector should recover 0.5*cos(2*pi*1000 t): RMS ~0.354, peak ~0.5, 1000 Hz.
+ * tone at depth m = 0.5, at the AM RX rate (50000/2 = 25000 Hz on the 50k
+ * re-base). The envelope detector should recover 0.5*cos(2*pi*1000 t):
+ * RMS ~0.354, peak ~0.5, 1000 Hz.
  */
 #include <math.h>
 #include <stdint.h>
@@ -17,7 +18,7 @@
 #include "sdr_am.h"
 #include "sdr_common.h"
 
-#define FS_HZ     24000.0f   /* SDR_AM_RX_RATE */
+#define FS_HZ     25000.0f   /* SDR_AM_RX_RATE = BOARD_AUDIO_SAMPLE_RATE_HZ/2 */
 #define BLK       32u        /* SDR_AM_RX_BLOCK_SIZE = DRV_CODEC_BLOCK_FRAMES/2 */
 #define F_OFF     500.0f     /* carrier offset from DC */
 #define F_MOD     1000.0f    /* modulating tone */

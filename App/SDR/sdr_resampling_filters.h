@@ -16,14 +16,14 @@
 /*
  * sdr_decim_384_90
  *   Kind            : elliptic IIR, CMSIS biquad cascade DF1
- *   Input rate      : 384 kHz
- *   Output rate     : 192 kHz (decimation by 2)
- *   Passband edge   : 90 kHz
- *   Stopband edge   : 102 kHz
+ *   Input rate      : 400 kHz
+ *   Output rate     : 200 kHz (decimation by 2)
+ *   Passband edge   : 93.75 kHz
+ *   Stopband edge   : 106.25 kHz
  *   Order           : N=8 (4 sections)
  *   Design          : passband ripple 0.4 dB, stopband attenuation 70 dB
  *   Measured        : passband ripple 0.400 dB, stopband attenuation 70.000 dB
- *   Purpose         : WFM output
+ *   Purpose         : WFM output (deferred on X6100)
  *   Coefficients    : CMSIS DF1 {b0, b1, b2, a1, a2} per section
  */
 #define SDR_DECIM_384_90_IIR_SECTIONS 4u
@@ -54,10 +54,10 @@ static const float32_t sdr_decim_384_90_iir_sos[SDR_DECIM_384_90_IIR_SECTIONS * 
 /*
  * sdr_decim_384_9
  *   Kind            : half-band FIR, decimation by 2
- *   Input rate      : 384 kHz
- *   Output rate     : 192 kHz (decimation by 2)
- *   Passband edge   : 9 kHz
- *   Stopband edge   : 183 kHz
+ *   Input rate      : 400 kHz
+ *   Output rate     : 200 kHz (decimation by 2)
+ *   Passband edge   : 9.375 kHz
+ *   Stopband edge   : 190.625 kHz
  *   Requested order : N=6
  *   Adjusted order  : N=6 (7 taps, odd)
  *   Structure       : forced half-band zeros (max |w| before snap 7.09591e-14)
@@ -82,10 +82,10 @@ static const float32_t sdr_decim_384_9_coeffs[SDR_DECIM_384_9_NUM_TAPS] = {
 /*
  * sdr_decim_192_9
  *   Kind            : half-band FIR, decimation by 2
- *   Input rate      : 192 kHz
- *   Output rate     : 96 kHz (decimation by 2)
- *   Passband edge   : 9 kHz
- *   Stopband edge   : 87 kHz
+ *   Input rate      : 200 kHz
+ *   Output rate     : 100 kHz (decimation by 2)
+ *   Passband edge   : 9.375 kHz
+ *   Stopband edge   : 90.625 kHz
  *   Requested order : N=10
  *   Adjusted order  : N=10 (11 taps, odd)
  *   Structure       : forced half-band zeros (max |w| before snap 2.55856e-13)
@@ -114,10 +114,10 @@ static const float32_t sdr_decim_192_9_coeffs[SDR_DECIM_192_9_NUM_TAPS] = {
 /*
  * sdr_decim_96_9
  *   Kind            : half-band FIR, decimation by 2
- *   Input rate      : 96 kHz
- *   Output rate     : 48 kHz (decimation by 2)
- *   Passband edge   : 9 kHz
- *   Stopband edge   : 39 kHz
+ *   Input rate      : 100 kHz
+ *   Output rate     : 50 kHz (decimation by 2)
+ *   Passband edge   : 9.375 kHz
+ *   Stopband edge   : 40.625 kHz
  *   Requested order : N=14
  *   Adjusted order  : N=14 (15 taps, odd)
  *   Structure       : forced half-band zeros (max |w| before snap 4.37724e-14)
@@ -150,10 +150,10 @@ static const float32_t sdr_decim_96_9_coeffs[SDR_DECIM_96_9_NUM_TAPS] = {
 /*
  * sdr_decim_48_9
  *   Kind            : half-band FIR, decimation by 2
- *   Input rate      : 48 kHz
- *   Output rate     : 24 kHz (decimation by 2)
- *   Passband edge   : 9 kHz
- *   Stopband edge   : 15 kHz
+ *   Input rate      : 50 kHz
+ *   Output rate     : 25 kHz (decimation by 2)
+ *   Passband edge   : 9.375 kHz
+ *   Stopband edge   : 15.625 kHz
  *   Requested order : N=42
  *   Adjusted order  : N=42 (43 taps, odd)
  *   Structure       : forced half-band zeros (max |w| before snap 1.62351e-14)
@@ -214,10 +214,10 @@ static const float32_t sdr_decim_48_9_coeffs[SDR_DECIM_48_9_NUM_TAPS] = {
 /*
  * sdr_decim_24_5
  *   Kind            : half-band FIR, decimation by 2
- *   Input rate      : 24 kHz
- *   Output rate     : 12 kHz (decimation by 2)
- *   Passband edge   : 5 kHz
- *   Stopband edge   : 7 kHz
+ *   Input rate      : 25 kHz
+ *   Output rate     : 12.5 kHz (decimation by 2.0)
+ *   Passband edge   : 5.208333333333333 kHz
+ *   Stopband edge   : 7.291666666666667 kHz
  *   Requested order : N=62
  *   Adjusted order  : N=62 (63 taps, odd)
  *   Structure       : forced half-band zeros (max |w| before snap 4.58857e-05)
@@ -298,15 +298,15 @@ static const float32_t sdr_decim_24_5_coeffs[SDR_DECIM_24_5_NUM_TAPS] = {
 /*
  * sdr_decim_192_15
  *   Kind            : half-band FIR, decimation by 2
- *   Input rate      : 192 kHz
- *   Output rate     : 96 kHz (decimation by 2)
- *   Passband edge   : 15 kHz
- *   Stopband edge   : 81 kHz
+ *   Input rate      : 200 kHz
+ *   Output rate     : 100 kHz (decimation by 2)
+ *   Passband edge   : 15.625 kHz
+ *   Stopband edge   : 84.375 kHz
  *   Requested order : N=14
  *   Adjusted order  : N=14 (15 taps, odd)
  *   Structure       : forced half-band zeros (max |w| before snap 1.57496e-13)
  *   Measured        : passband ripple 0.000 dB, stopband attenuation 101.329 dB
- *   Purpose         : WFM audio 192 -> 96 kHz
+ *   Purpose         : WFM audio 200 -> 100 kHz (deferred on X6100)
  */
 #define SDR_DECIM_192_15_NUM_TAPS 15u
 #define SDR_DECIM_192_15_HALFBAND_CENTER 7u
@@ -334,15 +334,15 @@ static const float32_t sdr_decim_192_15_coeffs[SDR_DECIM_192_15_NUM_TAPS] = {
 /*
  * sdr_decim_96_15
  *   Kind            : half-band FIR, decimation by 2
- *   Input rate      : 96 kHz
- *   Output rate     : 48 kHz (decimation by 2)
- *   Passband edge   : 15 kHz
- *   Stopband edge   : 33 kHz
+ *   Input rate      : 100 kHz
+ *   Output rate     : 50 kHz (decimation by 2)
+ *   Passband edge   : 15.625 kHz
+ *   Stopband edge   : 34.375 kHz
  *   Requested order : N=26
  *   Adjusted order  : N=26 (27 taps, odd)
  *   Structure       : forced half-band zeros (max |w| before snap 6.66134e-15)
  *   Measured        : passband ripple 0.001 dB, stopband attenuation 83.497 dB
- *   Purpose         : WFM audio 96 -> 48 kHz
+ *   Purpose         : WFM audio 100 -> 50 kHz (deferred on X6100)
  */
 #define SDR_DECIM_96_15_NUM_TAPS 27u
 #define SDR_DECIM_96_15_HALFBAND_CENTER 13u
@@ -382,10 +382,10 @@ static const float32_t sdr_decim_96_15_coeffs[SDR_DECIM_96_15_NUM_TAPS] = {
 /*
  * sdr_interp_24_5
  *   Kind            : FIR interpolator, interpolation by 2
- *   Input rate      : 12 kHz
- *   Output rate     : 24 kHz (interpolation by 2)
- *   Passband edge   : 5 kHz
- *   Stopband edge   : 7 kHz
+ *   Input rate      : 12.5 kHz
+ *   Output rate     : 25 kHz (interpolation by 2.0)
+ *   Passband edge   : 5.208333333333333 kHz
+ *   Stopband edge   : 7.291666666666667 kHz
  *   Taps            : 40 (multiple of L=2)
  *   Weights         : passband=1, stopband=144
  *   Measured        : passband ripple 0.163 dB, stopband attenuation 83.490 dB
@@ -440,10 +440,10 @@ static const float32_t sdr_interp_24_5_coeffs[SDR_INTERP_24_5_NUM_TAPS] = {
 /*
  * sdr_interp_48_9
  *   Kind            : FIR interpolator, interpolation by 2
- *   Input rate      : 24 kHz
- *   Output rate     : 48 kHz (interpolation by 2)
- *   Passband edge   : 9 kHz
- *   Stopband edge   : 15 kHz
+ *   Input rate      : 25 kHz
+ *   Output rate     : 50 kHz (interpolation by 2)
+ *   Passband edge   : 9.375 kHz
+ *   Stopband edge   : 15.625 kHz
  *   Taps            : 36 (multiple of L=2)
  *   Weights         : passband=1, stopband=5.76
  *   Measured        : passband ripple 0.006 dB, stopband attenuation 84.545 dB
