@@ -50,7 +50,18 @@ is rewritten for the F427, and the I/Q transport is replaced. See
 
 ## Building
 
-Not yet retargeted for the F427 (the imported build still targets the H7). The
-toolchain will remain `arm-none-eabi` + CMake + Ninja. Upstream developer docs
-under [docs/](docs/) describe the original X6200 design and remain a useful
-reference while the port is in progress.
+The port is in progress; `bringup/` holds the milestone bring-up images (see
+[PORTING.md](PORTING.md)). They build bare-metal for the STM32F427 with
+`arm-none-eabi-gcc`, no STM32 HAL — CMSIS device + LL headers come from an
+STM32CubeF4 install (`CUBE=~/st/STM32CubeF4` by default) and CMSIS-DSP from the
+pinned `third_party/CMSIS-DSP` submodule.
+
+```sh
+git submodule update --init          # fetch the pinned CMSIS-DSP (v1.11.0)
+cd bringup && ./build.sh             # M0 boot image -> m0_boot.elf/.bin
+../renode/run.sh bringup/m0_boot.elf # run it headless in Renode
+```
+
+Upstream developer docs under [docs/](docs/) describe the original X6200 design
+and remain a useful reference while the port is in progress. The imported
+upstream `CMakeLists.txt` / `Core/` still target the H7 and are being replaced.

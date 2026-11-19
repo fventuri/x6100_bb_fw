@@ -45,8 +45,9 @@ The verbatim import omitted the third-party vendor trees (ST/ARM code, not
 upstream's GPLv3 IP, and H7-specific). On the X6100 these are provided by the
 STM32CubeF4 at build time (headers only) plus repo-local files:
 
-- `Drivers/STM32H7xx_HAL_Driver/` → **dropped** (no HAL); CMSIS-DSP pulled from CubeF4 for the M4F
-- `Drivers/CMSIS/…` + `Middlewares/Third_Party/ARM_CMSIS/` → **CMSIS device + LL headers + CMSIS-DSP** from CubeF4 (Cortex-M4/FPv4-SP)
+- `Drivers/STM32H7xx_HAL_Driver/` → **dropped** (no HAL)
+- `Drivers/CMSIS/…` (core + device + LL headers) → from **STM32CubeF4** at build time (Cortex-M4/FPv4-SP), headers only
+- `Middlewares/Third_Party/ARM_CMSIS/` (CMSIS-DSP) → **`third_party/CMSIS-DSP` git submodule**, ARM CMSIS-DSP pinned at **v1.11.0** (the earliest standalone modular release; upstream's bundled "V1.10.0" was a patched snapshot). Upstream's App relied on `MAX`/`MIN` that its patched copy added to `dsp/utils.h`; the official library lacks them, so `compat/cmsis_dsp_compat.h` defines them (guarded) and the build force-includes it. Run `git submodule update --init` after cloning.
 - `startup_stm32h725xx.s`, `STM32H725xG_flash.ld` → `Platform/f427/startup.c`, `Platform/f427/stm32f427.ld` *(done)*
 - `x6200_bb_fw.ioc` → not used (no CubeMX)
 
@@ -60,9 +61,27 @@ STM32CubeF4 at build time (headers only) plus repo-local files:
   prints a banner + 1 Hz heartbeat on USART1 — verified in Renode
   (`renode/run.sh`). H7 startup/linker retired. Toolchain/linker proven before
   any App code.
-- **M1 — App-layer spike**: one `App/SDR` demodulator compiling against CMSIS-DSP
-  on the F427 with a software CORDIC, fed by a stub I/Q source. Proves the App
-  layer ports before committing the project to it.
+- **M1 — App-layer spike** *(DONE — go/no-go PASSED)*: upstream's real,
+  unmodified AM demodulator (`App/SDR/sdr_am.c` + the `sdr_iir.c` elliptic
+  filter designer) compiles for the F427 against CMSIS-DSP and correctly
+  recovers a test tone (`bringup/m1_am_spike.c`: AM carrier +500 Hz, 1 kHz tone,
+  50% depth → rms 0.351 / peak 0.496 / 1000 Hz, Renode). The portable App layer
+  ports and runs. System dependencies (IRQ, logging, codec block size, event
+  bus, spectrum/noise) are HAL-free shims in `bringup/m1_shims/` for the spike;
+  they become real milestones (M2/M3) later.
+  - *CMSIS-DSP finding:* upstream's App targets the **modular** CMSIS-DSP (the
+    `dsp/` layout with `dsp/utils.h` MAX/MIN), not the older monolithic
+    `arm_math.h` in CubeF4. The project must vendor a modular CMSIS-DSP (see the
+    re-vendoring note above). The spike builds against Georgy's bundled copy via
+    `GDSP=...` until that is vendored.
+  - *Software CORDIC — done & validated.* `Platform/f427/bsp_cordic.c` serves
+    the App's two CORDIC entry points (`Bsp_Cordic_Atan2` for the FM
+    discriminator, `Bsp_Cordic_SinCos` for the NFM TX modulator) with CMSIS-DSP
+    FastMath (`arm_atan2_f32`, `arm_sin_f32`, `arm_cos_f32`) on the FPU. The
+    F427 has no CORDIC peripheral, but the whole SDR chain is already float, so
+    there is no fixed<->float conversion cost — which is exactly what made the
+    hardware CORDIC a wash in practice. Verified on the F427 Renode model
+    (`bringup/m1_cordic_test.c`): atan2 vs libm < 1 urad, sin/cos ~19 ppm.
 - **M2 — real transport**: graft the X6100 sample transport (codec-I/Q + on-MCU
   decimation chain) into the upstream RX ring → live RX on an upstream demod.
 - **M3 — Devices**: port `Devices/` for X6100 parts (codec, clock gen, IO

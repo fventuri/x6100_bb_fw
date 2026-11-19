@@ -23,9 +23,12 @@ NM=${NM:-arm-none-eabi-nm}
 # HSE_VALUE = board 25 MHz crystal. HCLK_MHZ selects core clock (250 default / 168).
 DEFS="-DSTM32F427xx -DUSE_FULL_LL_DRIVER -DHSE_VALUE=25000000 -DHCLK_MHZ=${HCLK_MHZ:-250}"
 INCS="-I$CMSIS_CORE -I$CMSIS_DEV -I$LL_INC -I$PLATFORM_DIR"
+# Force-include the compat macros (MAX/MIN) upstream's App expects globally;
+# the official CMSIS-DSP submodule does not provide them.
+COMPAT="-include $REPO_ROOT/compat/cmsis_dsp_compat.h"
 CFLAGS="-mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -Os \
         -ffreestanding -fno-common -Wall -Wextra \
-        -ffunction-sections -fdata-sections $DEFS $INCS"
+        -ffunction-sections -fdata-sections $DEFS $INCS $COMPAT"
 LINK_LD=${LINK_LD:-$PLATFORM_DIR/stm32f427.ld}
 LDFLAGS="-T $LINK_LD -Wl,--gc-sections -Wl,-Map,firmware.map \
          --specs=nano.specs --specs=nosys.specs -nostartfiles"
