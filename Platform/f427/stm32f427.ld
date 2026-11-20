@@ -41,6 +41,11 @@ SECTIONS
         . = ALIGN(4);
         _sbss = .;
         *(.bss*)
+        /* Platform/bsp_memory.h BSP_RAM_D1_BSS[_32]: on the H7 this is a
+         * separate AXI-SRAM (.ram_d1_bss) domain; the F427 has one contiguous
+         * SRAM, so fold it into .bss (zeroed by startup like the rest). */
+        . = ALIGN(32);
+        *(.ram_d1_bss*)
         *(COMMON)
         . = ALIGN(4);
         _ebss = .;

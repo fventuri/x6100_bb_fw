@@ -43,6 +43,9 @@ float Sdr_Spectrum_Get_Noise_Lin(void) { return 0.0f; }
 bool  Sdr_Spectrum_Is_Noise_Valid(void) { return false; }
 float Sdr_Spectrum_Get_Demod_Noise_Est_Db(void) { return 0.0f; }
 const float Sdr_Spectrum_Get_S_meter(void) { return -140.0f; }
+/* i2s_rx_path's ISR hook now also drives the spectrum accumulation; the M3 I2S
+ * spike links no real spectrum, so stub this per-bank entry to a no-op. */
+void Sdr_Spectrum_Process(void) { }
 
 /* ---- Noise reduction (stubbed; disabled in this spike) ----------------
  * sdr_rx.c calls Sdr_NR_Init/Process; NR is default-disabled, so Process is a

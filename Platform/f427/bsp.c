@@ -251,13 +251,33 @@ void bsp_uprintf(const char *fmt, ...)
     }
 }
 
+/* Free-running millisecond counter, advanced by the SysTick exception. Only
+ * ticks while interrupts are enabled (the app does __enable_irq()); bring-up
+ * spikes that run with interrupts masked do not use it and rely on the polled
+ * bsp_delay_ms() below, which works without the ISR. Read via Bsp_Time_GetMs()
+ * (bsp_time.h) -- the App scheduler's time base. */
+static volatile uint32_t s_ms;
+
+void SysTick_Handler(void)
+{
+    s_ms++;
+}
+
+uint32_t Bsp_Time_GetMs(void)
+{
+    return s_ms;
+}
+
 void bsp_systick_init_1ms(void)
 {
     SysTick->LOAD = (SystemCoreClock / 1000u) - 1u;
     SysTick->VAL  = 0u;
-    SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_ENABLE_Msk;
+    SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk
+                  | SysTick_CTRL_ENABLE_Msk;
 }
 
+/* Polled delay: counts SysTick reloads via COUNTFLAG, independent of the ISR,
+ * so it works whether or not interrupts are enabled. */
 void bsp_delay_ms(uint32_t ms)
 {
     while (ms--) {
