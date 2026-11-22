@@ -285,3 +285,9 @@ void bsp_delay_ms(uint32_t ms)
             ;
     }
 }
+
+/* Bsp_Time API alias used by App code ported from the H7 tree (app_hostlink). */
+void Bsp_Time_DelayMs(uint32_t ms)
+{
+    bsp_delay_ms(ms);
+}

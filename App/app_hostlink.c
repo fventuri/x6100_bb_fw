@@ -47,8 +47,13 @@
 #define HOSTLINK_CALIB_WR_END    0xF1FAu
 #define HOSTLINK_CMD_ADDR        0xFFFEu
 
-/* Command block: 0x0000..0x00D7, one 32-bit word per command at cmd*4. */
-#define HOSTLINK_CMD_WORDS 54u
+/* Command block: 0x0000..0x00DF, one 32-bit word per command at cmd*4.
+ * X6100 adaptation: the OEM BASE 1.1.9 control file is 56 words (word 55 =
+ * the Linux boot-ready handshake); Georgy's X6200 value was 54. The host
+ * writes all 56 words in one transaction, so a 54-word block would wrap the
+ * last two words onto words 0..1 and corrupt VFOA_FREQ. Words 44..55 have no
+ * handler yet (NULL in s_cmd_handlers); they are simply ignored. */
+#define HOSTLINK_CMD_WORDS 56u
 #define HOSTLINK_CMD_BYTES (HOSTLINK_CMD_WORDS * 4u)
 
 #define HOSTLINK_LOW_BYTE_MASK 0x000000FFu

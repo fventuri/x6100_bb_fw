@@ -16,6 +16,11 @@
  * only while interrupts are enabled. */
 uint32_t Bsp_Time_GetMs(void);
 
+/* Busy-wait delay in milliseconds (wraps bsp.c bsp_delay_ms, which works
+ * without the SysTick ISR). Used by the host-link deferred work (e.g. the IAP
+ * settle before Bsp_Boot_EnterIap). */
+void Bsp_Time_DelayMs(uint32_t ms);
+
 /* Free-running CPU-cycle counter (DWT CYCCNT). The app enables it
  * (CoreDebug DEMCR TRCENA + DWT CYCCNTENA); reads 0 until then. 32-bit, wraps
  * ~17 s at 250 MHz -- always take differences as uint32_t. */
