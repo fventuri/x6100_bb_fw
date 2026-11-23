@@ -28,9 +28,11 @@ static const DrvFpgaRawWindow s_window = {
 static volatile uint32_t s_pos;
 
 /* The X6100 raw rate is fixed (externally clocked), so the ring contents never
- * become invalid the way an FPGA fftdec retune would: the generation is a
- * constant and the consumer never resyncs on it. Start at 1 so it is non-zero. */
-static const uint32_t s_generation = 1u;
+ * become invalid the way an FPGA fftdec retune would. Start at 1 (non-zero).
+ * It is still bumped once by Drv_Fpga_Codec_NotifyRateChange() when the App RX
+ * config path crosses a fftdec boundary, so a staged Sdr_Rx config commits (see
+ * the header). Not const: the bump is a single-word write from task context. */
+static volatile uint32_t s_generation = 1u;
 
 #define RAW_RING_MASK (DRV_FPGA_RAW_WINDOW_SAMPLES - 1u)
 
@@ -90,6 +92,11 @@ uint32_t Drv_Fpga_GetPos(void)
 uint32_t Drv_Fpga_GetRawGeneration(void)
 {
     return s_generation;
+}
+
+void Drv_Fpga_Codec_NotifyRateChange(void)
+{
+    s_generation++;
 }
 
 uint32_t Drv_Fpga_GetSamplesPerTick(void)

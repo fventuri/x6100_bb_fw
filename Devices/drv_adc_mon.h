@@ -4,83 +4,112 @@
 #include <stdint.h>
 
 /*
- * ADC1 monitoring scan: 6 channels in CubeMX rank order (IN1..IN5, IN8),
- * DMA1_Stream7 circular into a D2 buffer. Drv_AdcMon_Init() calibrates the
- * ADC and starts continuous conversions; the DMA completion ISR copies each
- * finished scan out of the DMA buffer. Drv_AdcMon_Sample() waits for the next
- * completed scan as a liveness check before the caller reads the latest copy.
+ * X6100 (STM32F427) analog monitor: two independent regular-scan ADC groups,
+ * each free-running into a circular DMA buffer with NO ADC interrupt, exactly
+ * as OEM BASE 1.1.9 arranges them (x6100-base/docs/analog.md, VERIFIED):
  *
- * Conversions implemented here: external supply voltage (IN1, scaled to its
- * full-scale value below) and the PA thermistor (IN5, DRV_ADC_MON_NTC_* model).
- * The RF detector channels stay raw: their power/SWR conversion belongs to the
- * TX path.
+ *   ADC1  ch0/PA0, ch1/PA1, ch2/PA2   -> DMA2 Stream0 ch0, 3 halfwords
+ *         ch0 = forward RF detector, ch1 = reflected RF detector,
+ *         ch2 = ACC ALC_V correction input.  Read by the fast TX path.
  *
- * Drv_AdcMon_TakeStats() reports scan/error counters for DMA health logging.
- * A scan callback may be registered to consume the completed scan in the DMA
- * ISR context; keep it short.
+ *   ADC2  ch6/PA6, ch7/PA7, ch14/PC4  -> DMA2 Stream2 ch1, 15 halfwords
+ *         five interleaved {ch6,ch7,ch14} triplets.  ch6 = external supply,
+ *         ch7 = PA current feedback, ch14/PC4 = unresolved OEM role (probed
+ *         here as a PA-temperature candidate).  Slow telemetry.
  *
- * Returns 0 on success or a negative error code.
+ * Drv_AdcMon_Init() enables the clocks, configures both DMA streams and both
+ * ADCs, and starts continuous conversions. The DMA keeps the buffers fresh on
+ * its own; Drv_AdcMon_Sample() snapshots the ADC1 triplet and runs the OEM
+ * ADC2 telemetry filter (y = 0.92*y + 0.08*mean(5), analog.md VERIFIED) over
+ * the 15-halfword buffer, then the Read* accessors return the latest values.
+ *
+ * All functions return 0 on success or a negative error code.
  */
 
 /*
- * Nominal time between completed scans. On STM32H72x/H73x the ADC analog block
- * runs at fadc_ker_ck = adc_ker_ck / 2 (RM0468 "ADC clocks"), so the 96 MHz
- * PLL2 output with PRESC=/32 gives 1.5 MHz, not 3 MHz. A 12-bit conversion
- * takes 6.5 ADC clocks (RM0468 "Timing": Tconv = Tsample + Tsar = 32.5 + 6.5),
- * so one 6-channel scan is 6 x 39 = 234 clocks = 156 us.
+ * ADC1 scan period. ADCCLK = PCLK2 (125 MHz) / 8 = 15.625 MHz; each channel is
+ * 480 sampling + 12 conversion = 492 cycles = 31.5 us; the 3-channel scan is
+ * ~94.5 us. app_tx_monitor derives its EMA time constants from this value.
  */
-#define DRV_ADC_MON_SCAN_PERIOD_US 156u
+#define DRV_ADC_MON_SCAN_PERIOD_US 95u
+
+/*
+ * Unified channel index. ADC1 channels occupy 0..2 so the TX-monitor scan
+ * callback can read raw[FWD], raw[REFL], raw[EXT_ALC] directly from a snapshot;
+ * the ADC2 channels follow. The OEM X6100 has NO dedicated PA thermistor (no NTC
+ * in any doc or ADC channel); ch14/PC4 has an unresolved OEM role and is PROBED
+ * here as a provisional PA-temp input under DRV_ADC_MON_PA_NTC -- see the NTC
+ * model note below; the transfer function is a documented guess, not verified.
+ */
 typedef enum {
-    DRV_ADC_MON_VEXT = 0,  /* IN1, PA1_C — external supply */
-    DRV_ADC_MON_FWD,       /* IN2, PF11  — forward detector (raw) */
-    DRV_ADC_MON_REFL,      /* IN3, PA6   — reflected detector (raw) */
-    DRV_ADC_MON_SPARE,     /* IN4, PC4   — unused (raw) */
-    DRV_ADC_MON_PA_NTC,    /* IN5, PB1   — PA thermistor */
-    DRV_ADC_MON_EXT_ALC,   /* IN8, PC5   — external PA gain control (EXT ALC) */
+    DRV_ADC_MON_FWD = 0,   /* ADC1 ch0 / PA0 -- forward RF detector (raw) */
+    DRV_ADC_MON_REFL,      /* ADC1 ch1 / PA1 -- reflected RF detector (raw) */
+    DRV_ADC_MON_EXT_ALC,   /* ADC1 ch2 / PA2 -- ACC ALC_V correction (raw) */
+    DRV_ADC_MON_VEXT,      /* ADC2 ch6 / PA6 -- external supply (filtered raw) */
+    DRV_ADC_MON_PA_CURR,   /* ADC2 ch7 / PA7 -- PA current feedback (filtered) */
+    DRV_ADC_MON_PA_NTC,    /* ADC2 ch14 / PC4 -- unresolved; provisional PA-temp */
     DRV_ADC_MON_CH_COUNT
 } DrvAdcMonChannel;
 
-/* External supply voltage at ADC1 IN1 full scale. */
-#define DRV_ADC_MON_VEXT_FULL_SCALE_MV 19800u
+/*
+ * External-supply conversion. The OEM multiplies the filtered ADC2 ch6 code by
+ * the VERIFIED firmware scale 4.835165 to get a millivolt-domain value (the
+ * exact divider/gain is unresolved, so this constant is preserved rather than
+ * recomputed; analog.md). Drv_AdcMon_ReadVextMv() returns that value in mV.
+ */
+#define DRV_ADC_MON_VEXT_SCALE 4.835165f
 
-/* ADC1 reference, nominal board 3.3 V rail. */
+/* ADC reference, nominal board 3.3 V rail. */
 #define DRV_ADC_MON_VREF_MV 3300u
 
 /*
- * PA thermistor model (ADC1 IN5): NTC to GND, pull-up to the rail below, node
- * straight into the ADC. The pull-up rail differs from Vref, so the reading is
- * not ratiometric and the conversion needs both rails. The electrical parameters
- * are in the DRV_ADC_MON_NTC_* defines.
+ * PROVISIONAL PA-NTC model for ch14/PC4. The X6100 has no documented PA
+ * thermistor; Franco's M5a decision is to probe PC4 as a candidate. These
+ * parameters are an UNVALIDATED guess carried over from the X6200 PA NTC (NTC
+ * to GND, pull-up to a separate 5 V rail, divider node into the ADC). The
+ * absolute temperature is therefore not trustworthy yet; the point of the probe
+ * is to see whether PC4 MOVES with PA heat under real RF (M5c). The thresholds
+ * are generous (80 C trip maps to a raw code far below the ~920 idle code), so
+ * the trip cannot false-fire at idle. Revisit / recalibrate or disarm in M5c.
  */
 #define DRV_ADC_MON_NTC_R_PULLUP_OHM 100000u
 #define DRV_ADC_MON_NTC_V_PULLUP_MV  5000u
 #define DRV_ADC_MON_NTC_R25_OHM      10000u
 #define DRV_ADC_MON_NTC_BETA_K       3950u
+#define DRV_ADC_MON_NTC_T0_K         298.15f
+#define DRV_ADC_MON_NTC_KELVIN_TO_C  273.15f
+#define DRV_ADC_MON_RAW_FULL_SCALE   4096u
 
 typedef struct {
-    uint32_t scans;          /* completed scans since init */
-    uint32_t overruns;       /* ADC overrun events seen by the scan ISR */
-    uint32_t dma_errors;     /* HAL ADC/DMA error callbacks */
-    uint32_t max_gap_cycles; /* longest ISR interval since the previous call */
+    uint32_t scans;          /* successful Sample() refreshes since init */
+    uint32_t overruns;       /* ADC overrun (OVR) events observed */
+    uint32_t dma_errors;     /* DMA transfer/FIFO error flags observed */
+    uint32_t max_gap_cycles; /* longest interval between Sample() calls */
 } DrvAdcMonStats;
 
-/* Called from the DMA ISR after each completed scan. Keep it short. */
+/*
+ * Optional hook fed a unified DRV_ADC_MON_CH_COUNT-entry snapshot by
+ * Drv_AdcMon_Sample() (indices FWD/REFL/EXT_ALC from the ADC1 triplet, the
+ * ADC2 channels from the filtered states). Kept for app_tx_monitor; it must be
+ * short. Not invoked from an ISR in this driver -- it runs in the Sample()
+ * caller's context.
+ */
 typedef void (*DrvAdcMonScanCallback)(const volatile uint16_t *raw, size_t count);
 
-int Drv_AdcMon_Init(void);
-int Drv_AdcMon_Sample(void);
-int Drv_AdcMon_ReadRaw(DrvAdcMonChannel ch, uint16_t *raw);
-int Drv_AdcMon_ReadVextMv(uint16_t *mv);
-int Drv_AdcMon_ReadPaTemp(int32_t *temp_mc);
+int  Drv_AdcMon_Init(void);
+int  Drv_AdcMon_Sample(void);
+int  Drv_AdcMon_ReadRaw(DrvAdcMonChannel ch, uint16_t *raw);
+int  Drv_AdcMon_ReadVextMv(uint16_t *mv);
+
+/*
+ * Provisional PA temperature from ch14/PC4 using the UNVALIDATED NTC model
+ * above (see note). ReadPaTemp converts the filtered PC4 code to milli-Celsius;
+ * PaRawFromTempMc is its inverse, turning a threshold into a raw code once so
+ * app_protect compares codes in the hot path. Both return 0 on success, -1 if
+ * the code maps outside the ADC span. NOT a verified measurement yet.
+ */
+int  Drv_AdcMon_ReadPaTemp(int32_t *temp_mc);
+int  Drv_AdcMon_PaRawFromTempMc(int32_t temp_mc, uint16_t *raw);
 
 int  Drv_AdcMon_SetScanCallback(DrvAdcMonScanCallback cb);
 void Drv_AdcMon_TakeStats(DrvAdcMonStats *out);
-
-/*
- * Inverse of the PA NTC model: the raw ADC1 code whose divider node equals the
- * given temperature. A protection threshold is turned into a raw-code
- * threshold once, so the hot path compares raw codes instead of running the
- * log conversion every sample. Returns 0 on success or -1 when the
- * temperature maps outside the ADC span.
- */
-int Drv_AdcMon_PaRawFromTempMc(int32_t temp_mc, uint16_t *raw);

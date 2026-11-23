@@ -151,10 +151,15 @@ static bool rate_hz_allowed(uint32_t rate_hz) {
 }
 
 static uint32_t source_rate_hz(uint8_t fftdec) {
-    if (fftdec > DRV_FPGA_FFTDEC_MAX) {
-        fftdec = DRV_FPGA_FFTDEC_MAX;
-    }
-    uint32_t m = DRV_FPGA_SAMPLES_PER_TICK_BASE >> fftdec;
+    /* The RX source rate is the ACTUAL FPGA producer rate, not the host-requested
+     * fftdec. radio_read_iq() already reads the raw ring using the hardware
+     * samples-per-tick (Drv_Fpga_GetSamplesPerTick); the resample chain MUST use
+     * the same rate or the audio comes out at the wrong rate. On a platform whose
+     * FPGA tracks fftdec (X6200) the two agree; on a fixed-rate FPGA (X6100/F427,
+     * where App_Fpga_SetSampleRate is a no-op) a host fftdec the hardware cannot
+     * honor would otherwise mis-configure the decimator/resampler. */
+    (void)fftdec;
+    uint32_t m = Drv_Fpga_GetSamplesPerTick();
     return BOARD_AUDIO_SAMPLE_RATE_HZ * m;
 }
 
@@ -482,6 +487,7 @@ bool Sdr_Rx_Process(float *audio48, uint32_t n) {
     Sdr_NB_Process(&iq);
 
     Sdr_IQ_Data decim_data = Sdr_Decimate_Process(iq);
+
     const SdrRxAudioPlan *plan = s_audio_plan_valid ? s_audio_plan : NULL;
     bool demod_done = false;
 

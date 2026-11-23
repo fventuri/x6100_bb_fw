@@ -19,6 +19,9 @@
  * resistor. ChargeVoltage bits [14:4], step 16 mV.
  */
 
+/* X6100: the bq24715 charger is on I2C1 (BSP_I2C_BUS_1) alongside the gauge,
+ * per x6100-base/docs/charger.md (0x09, HIGH CONFIDENCE; also needs PE14 high) --
+ * NOT I2C2 as on the X6200. */
 #define BQ24725_I2C_ADDR 0x09u /* 7-bit (8-bit write address 0x12) */
 #define BQ24725_REG_CHARGE_OPTION 0x12u
 #define BQ24725_REG_CHARGE_CURRENT 0x14u
@@ -45,7 +48,7 @@ static DrvChargerRegs s_regs;
 
 static int charger_read_word(uint8_t reg, uint16_t *value) {
     uint8_t word[2];
-    int rc = Bsp_I2c_WriteReadTimeout(BSP_I2C_BUS_2, BQ24725_I2C_ADDR, &reg, 1u,
+    int rc = Bsp_I2c_WriteReadTimeout(BSP_I2C_BUS_1, BQ24725_I2C_ADDR, &reg, 1u,
                                       word, 2u, BQ24725_XFER_TIMEOUT_MS);
     if (rc != 0) {
         return rc;
@@ -57,7 +60,7 @@ static int charger_read_word(uint8_t reg, uint16_t *value) {
 static int charger_write_word(uint8_t reg, uint16_t value) {
     const uint8_t tx[3] = {reg, (uint8_t)(value & 0xFFu),
                            (uint8_t)(value >> 8)};
-    return Bsp_I2c_WriteTimeout(BSP_I2C_BUS_2, BQ24725_I2C_ADDR, tx, 3u,
+    return Bsp_I2c_WriteTimeout(BSP_I2C_BUS_1, BQ24725_I2C_ADDR, tx, 3u,
                                 BQ24725_XFER_TIMEOUT_MS);
 }
 

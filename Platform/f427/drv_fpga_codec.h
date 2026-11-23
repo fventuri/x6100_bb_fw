@@ -47,5 +47,17 @@ void Drv_Fpga_Codec_Init(void);
  */
 void Drv_Fpga_Codec_PushIqBank(const uint16_t *rx_iq);
 
+/*
+ * Bump the raw generation. The X6100 rate is fixed, so the hardware never
+ * retunes -- but the App RX config path (app_radio_state -> Sdr_Rx_SetConfig)
+ * STAGES any config whose fftdec differs from the committed one and only commits
+ * it when radio_read_iq() observes a generation change (the X6200 FPGA bumps it
+ * on a rate retune). With a constant generation that commit never fires and the
+ * staged mode/filter change is lost. The X6100 backend's App_Fpga_SetSampleRate
+ * -- the rate-change barrier -- calls this so the staged config commits in step,
+ * exactly as the handshake intends; the consumer then does one resync.
+ */
+void Drv_Fpga_Codec_NotifyRateChange(void);
+
 /* Frames per I2S bank (one upstream RX block). Matches common/i2s.h. */
 #define DRV_FPGA_CODEC_BANK_FRAMES 128u

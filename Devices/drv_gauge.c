@@ -14,6 +14,8 @@
  * the 10 mOhm pack sense resistor (0.15625 mA), RepSOC 1/256 %.
  */
 
+/* X6100: the MAX17205 is on I2C1 (BSP_I2C_BUS_1), per x6100-base/docs/i2c.md
+ * (0x6C/0x36, VERIFIED) -- NOT I2C2 as on the X6200. */
 #define MAX172XX_I2C_ADDR 0x36u /* 7-bit (8-bit write address 0x6c) */
 #define MAX172XX_REG_REPCAP 0x005u
 #define MAX172XX_REG_REPSOC 0x006u
@@ -30,7 +32,7 @@
 
 static int gauge_read_word(uint8_t reg, uint16_t *value) {
     uint8_t word[2];
-    int rc = Bsp_I2c_WriteReadTimeout(BSP_I2C_BUS_2, MAX172XX_I2C_ADDR, &reg,
+    int rc = Bsp_I2c_WriteReadTimeout(BSP_I2C_BUS_1, MAX172XX_I2C_ADDR, &reg,
                                       1u, word, 2u, MAX172XX_XFER_TIMEOUT_MS);
     if (rc != 0) {
         return rc;
@@ -42,7 +44,7 @@ static int gauge_read_word(uint8_t reg, uint16_t *value) {
 static int gauge_write_word(uint8_t reg, uint16_t value) {
     const uint8_t tx[3] = {reg, (uint8_t)(value & 0xFFu),
                            (uint8_t)(value >> 8)};
-    return Bsp_I2c_WriteTimeout(BSP_I2C_BUS_2, MAX172XX_I2C_ADDR, tx, 3u,
+    return Bsp_I2c_WriteTimeout(BSP_I2C_BUS_1, MAX172XX_I2C_ADDR, tx, 3u,
                                 MAX172XX_XFER_TIMEOUT_MS);
 }
 

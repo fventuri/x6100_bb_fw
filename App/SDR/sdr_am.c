@@ -127,6 +127,14 @@ static void on_rx_cfg(const SdrRxCfg *cfg, void *user) {
     int32_t abs_high = cfg->filter_high_hz > 0 ? cfg->filter_high_hz
                                                : -cfg->filter_high_hz;
     int32_t max = MAX(abs_high, abs_low);
+    /* X6100 integration: the OEM adjustable channel filter (host reg44-47) is
+     * BYPASSED for AM/NFM, so the host delivers degenerate (~0) filter edges for
+     * AM. Designing an elliptic IQ filter at f_edge=0 is unstable (metallic
+     * audio) and ~4x the demod cost -- never do it; fall back to a fixed AM
+     * channel bandwidth (matches this module's init default and the m3 RX path). */
+    if (max < 1000) {
+        max = 5000;
+    }
     bool filter_changed = s_state.filter_freq != (uint32_t)max;
     s_state.filter_freq = (uint32_t)max;
 

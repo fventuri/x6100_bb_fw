@@ -56,7 +56,11 @@ void App_Ptt_SetCalibrate(bool on) { (void)on; }
 void App_Ptt_SetSwrScan(bool on) { (void)on; }
 
 /* --- protection / PA bias ------------------------------------------------- */
+/* The real app_protect (M5a-2+) owns App_Protect_SetChargeEnabled; builds that
+ * compile it define X6100_M5_REAL_PROTECT to drop this stub. */
+#ifndef X6100_M5_REAL_PROTECT
 void App_Protect_SetChargeEnabled(bool enabled) { (void)enabled; }
+#endif
 int  Drv_PaBias_SetBias(uint16_t bias_drive, uint16_t bias_final) {
     (void)bias_drive;
     (void)bias_final;
