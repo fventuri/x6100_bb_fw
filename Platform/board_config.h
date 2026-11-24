@@ -13,7 +13,7 @@
  * same clock generator, so every audio/FPGA tick rate derives from this. The
  * whole App/ rate ladder (100/50/25/12.5 kHz) auto-derives as this value times
  * or divided by powers of two. X6100 re-base: 48000 -> 50000 so the radio's
- * native 100 kHz I2S maps to base*2 with integer factors (see HANDOFF M2). */
+ * native 100 kHz I2S maps to base*2 with integer factors (the M2 rate re-base). */
 #define BOARD_AUDIO_SAMPLE_RATE_HZ   50000u
 
 #define BOARD_BUTTONS_PERIOD_MS      20u
